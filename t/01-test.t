@@ -2,25 +2,9 @@
 use strict;
 $^W = 1;			# warnings too
 
-my ($testnr, $maxnr, $oknr);
-
-BEGIN { $testnr = 1; $maxnr = 42; print "$testnr..$maxnr\n"; }
-sub ok ($) {
-  if ($_[0]) {
-    print "ok ", $testnr++, "\n";
-    $oknr++;
-    return 1;
-  } else {
-    print "not ok ", $testnr++, "\n";
-    my ($package, $filename, $line) = caller;
-    print "# Test failed at $filename line $line.\n";
-    return undef;
-  }
-}
-
-sub fatal($) {
-  ok(shift) or die;
-}
+use Test::More tests => 32;
+use File::Temp qw(tempdir);
+my $tempdir = tempdir( CLEANUP => 1 );
 
 my $Perl = $^X;
 
@@ -28,38 +12,42 @@ use Expect;
 #$Expect::Exp_Internal = 1;
 #$Expect::Debug = 1;
 
-print "\nBasic tests...\n\n";
+diag "Basic tests...";
 
-{
+subtest perl => sub {
+  plan tests => 4;
   my $exp = Expect->spawn("$Perl -v");
-  fatal(defined $exp);
+  ok(defined $exp);
   $exp->log_user(0);
-  fatal($exp->expect(10, "krzlbrtz", "Copyright") == 2);
-  fatal($exp->expect(10, "Larry Wall", "krzlbrtz") == 1);
-  fatal(not $exp->expect(3, "Copyright"));
-}
+  is($exp->expect(10, "krzlbrtz", "Copyright"), 2);
+  is($exp->expect(10, "Larry Wall", "krzlbrtz"), 1);
+  ok(not $exp->expect(3, "Copyright"));
+};
 
-print "\nTesting exec failure...\n\n";
+diag "Testing exec failure...";
 
-{
-  my $exp = new Expect;
+subtest exec_failure => sub {
+  plan tests => 6;
+  my $exp = Expect->new;
   ok(defined $exp);
   $exp->log_stdout(0);
   $! = 0;
-  fatal(not defined $exp->spawn("Ignore_This_Error_Its_A_Test__efluna3w6868tn8"));
+  ok(not defined $exp->spawn("Ignore_This_Error_Its_A_Test__efluna3w6868tn8"));
   ok($!);
   my $res = $exp->expect(20,
 			 [ "Cannot exec" => sub{ ok(1); }],
 			 [ eof => sub{ print "EOF\n"; ok(1) }],
 			 [ timeout => sub{ print "TIMEOUT\n"; ok(0) }],
 			);
-#  ok(defined $res and $res == 1);
-}
+  ok(defined $res);
+  is($res, 1);
+};
 
-print "\nTesting exp_continue...\n\n";
+diag "Testing exp_continue...";
 
-{
-  my $exp = new Expect($Perl . q{ -e 'foreach (qw(A B C D End)) { print "$_\n"; }' });
+subtest exp_continue => sub {
+  plan tests => 5;
+  my $exp = Expect->new($Perl . q{ -e 'foreach (qw(A B C D End)) { print "$_\n"; }' });
   my $state = "A";
   $exp->expect(2,
 	       [ "[ABCD]" => sub { my $self = shift;
@@ -72,10 +60,10 @@ print "\nTesting exp_continue...\n\n";
                [ timeout => sub { print "TIMEOUT\n"; ok(0);} ],
               );
   $exp->hard_close();
-}
+};
 
 {
-  my $exp = new Expect($Perl . q{ -e 'print "Begin\n"; sleep (5); print "End\n";' });
+  my $exp = Expect->new($Perl . q{ -e 'print "Begin\n"; sleep (5); print "End\n";' });
   my $cnt = 0;
   $exp->expect(1,
 	       [ "Begin" => sub { ok(1); exp_continue; } ],
@@ -89,7 +77,7 @@ print "\nTesting exp_continue...\n\n";
 
 {
   # timeout shouldn't destroy accum contents
-  my $exp = new Expect($Perl . q{ -e 'print "some string\n"; sleep (5);' });
+  my $exp = Expect->new($Perl . q{ -e 'print "some string\n"; sleep (5);' });
   ok(not defined $exp->expect(1, "NoMaTcH"));
   my $i = $exp->expect(1, '-re', 'some\s');
   ok (defined $i and $i == 1);
@@ -99,7 +87,7 @@ print "\nTesting exp_continue...\n\n";
 print "\nTesting -notransfer...\n\n";
 
 {
-  my $exp = new Expect($Perl . q{ -e 'print "X some other\n"; sleep 5;'});
+  my $exp = Expect->new($Perl . q{ -e 'print "X some other\n"; sleep 5;'});
   $exp->notransfer(1);
   $exp->expect(3,
 	       [ "some" => sub { ok(1); } ],
@@ -146,8 +134,8 @@ print "\nTesting raw reversing...\n\n";
      "Was ich brauche ist ein Lagertonnennotregal",
     );
 
-  my $exp = new Expect;
-#  my $exp = new Expect ("$Perl -MIO::File -ne 'BEGIN {\$|=1; \$in = new IO::File \">reverse.in\" or die; \$in->autoflush(1); \$out = new IO::File \">reverse.out\" or die; \$out->autoflush(1); } chomp; print \$in \"\$_\\n\"; \$_ = scalar reverse; print \"\$_\\n\"; print \$out \"\$_\\n\"; '");
+  my $exp = Expect->new;
+#  my $exp = Expect->new("$Perl -MIO::File -ne 'BEGIN {\$|=1; \$in = IO::File->new( \">reverse.in\" ) or die; \$in->autoflush(1); \$out = IO::File->new( \">reverse.out\" ) or die; \$out->autoflush(1); } chomp; print \$in \"\$_\\n\"; \$_ = scalar reverse; print \"\$_\\n\"; print \$out \"\$_\\n\"; '");
 
 
   print "isatty(\$exp): ";
@@ -208,7 +196,7 @@ _EOT_
   my $randstring = 'fakjdf ijj845jtirg8e 4jy8 gfuoyhjgt8h gues9845th guoaeh gt98hae 45t8u ha8rhg ue4ht 8eh tgo8he4 t8 gfj aoingf9a8hgf uain dgkjadshftuehgfusand987vgh afugh 8h 98H 978H 7HG zG 86G (&g (O/g &(GF(/EG F78G F87SG F(/G F(/a sldjkf hajksdhf jkahsd fjkh asdHJKGDSGFKLZSTRJKSGOSJDFKGHSHGDFJGDSFJKHGSDFHJGSDKFJGSDGFSHJDGFljkhf lakjsdh fkjahs djfk hasjkdh fjklahs dfkjhasdjkf hajksdh fkjah sdjfk hasjkdh fkjashd fjkha sdjkfhehurthuerhtuwe htui eruth ZI AHD BIZA Di7GH )/g98 9 97 86tr(& TA&(t 6t &T 75r 5$R%/4r76 5&/% R79 5 )/&';
   my $maxlen;
   $exp->log_stdout(0);
-  $exp->log_file("test.log");
+  $exp->log_file("$tempdir/test.log");
   my $exitloop;
   $SIG{ALRM} = sub { die "TIMEOUT on send" };
 
@@ -247,7 +235,7 @@ _EOT_
 # to avoid that.
 
 {
-  my $exp = new Expect ("$Perl -ne 'chomp; sleep 0; print scalar reverse, \"\\n\"'")
+  my $exp = Expect->new("$Perl -ne 'chomp; sleep 0; print scalar reverse, \"\\n\"'")
     or die "Cannot spawn $Perl: $!\n";
 
   $exp->log_stdout(0);
@@ -282,10 +270,10 @@ _EOT_
 
 {
   print "\nTesting controlling terminal...\n\n";
-  my $exp = new Expect($Perl . q{ -MIO::Handle -e 'open(TTY, "+>/dev/tty") or die "no controlling terminal"; autoflush TTY 1; print TTY "Expect_test_prompt: "; $s = <TTY>; chomp $s; print "uc: \U$s\n"; close TTY; exit 0;'});
+  my $exp = Expect->new($Perl . q{ -MIO::Handle -e 'open(TTY, "+>/dev/tty") or die "no controlling terminal"; autoflush TTY 1; print TTY "Expect_test_prompt: "; $s = <TTY>; chomp $s; print "uc: \U$s\n"; close TTY; exit 0;'});
 
   my $pwd = "pAsswOrd";
-  $exp->log_file("test_dev_tty.log");
+  $exp->log_file("$tempdir/test_dev_tty.log");
   $exp->expect(10,
 	       [ qr/Expect_test_prompt:/, sub {
 		   my $self = shift;
@@ -312,7 +300,7 @@ _EOT_
 print "\nChecking if exit status is returned correctly...\n\n";
 
 {
-  my $exp = new Expect($Perl . q{ -e 'print "Expect_test_pid: $$\n"; sleep 2; exit(42);'});
+  my $exp = Expect->new($Perl . q{ -e 'print "Expect_test_pid: $$\n"; sleep 2; exit(42);'});
   $exp->expect(10,
                [ qr/Expect_test_pid:/, sub { my $self = shift; } ],
                [ eof => sub { print "eof\n"; } ],
@@ -327,7 +315,7 @@ print "\nChecking if exit status is returned correctly...\n\n";
 print "\nChecking if signal exit status is returned correctly...\n\n";
 
 {
-  my $exp = new Expect($Perl . q{ -e 'print "Expect_test_pid: $$\n"; sleep 2; kill 15, $$;'});
+  my $exp = Expect->new($Perl . q{ -e 'print "Expect_test_pid: $$\n"; sleep 2; kill 15, $$;'});
   $exp->expect(10,
                [ qr/Expect_test_pid:/, sub { my $self = shift; } ],
                [ eof => sub { print "eof\n"; } ],
@@ -350,7 +338,7 @@ Checking if EOF on pty slave is correctly reported to master...
 __EOT__
 
 {
-  my $exp = new Expect($Perl . q{ -e 'close STDIN; close STDOUT; close STDERR; sleep 3;'});
+  my $exp = Expect->new($Perl . q{ -e 'close STDIN; close STDOUT; close STDERR; sleep 3;'});
   $exp->expect(2,
                [ eof => sub { print "EOF\n"; } ],
                [ timeout => sub { print "TIMEOUT\nSorry, you may not notice if the spawned process closes the pty.\n"; } ],
@@ -358,8 +346,10 @@ __EOT__
   $exp->hard_close();
 }
 
-print "Passed $oknr of $maxnr tests.\n";
-print <<__EOT__ if ($oknr != $maxnr);
+
+use Test::Builder;
+my $Test = Test::Builder->new;
+diag <<__EOT__ if (not $Test->is_passing);
 Please scroll back and check which test(s) failed and what comments
 were given.  Expect probably is still completely usable!!
 __EOT__

@@ -1,12 +1,25 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Expect
-version:      1.21
-version_from: Expect.pm
-installdirs:  site
+---
+abstract: 'Expect for Perl'
+author:
+  - unknown
+build_requires:
+  Test::More: '1.00'
+configure_requires:
+  ExtUtils::MakeMaker: '0'
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.140640'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: Expect
+no_index:
+  directory:
+    - t
+    - inc
 requires:
-    IO::Pty:                       1.03
-    IO::Tty:                       1.03
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  IO::Pty: '1.03'
+  IO::Tty: '1.03'
+resources:
+  repository: http://github.com/szabgab/expect.pm.git
+version: '1.22'

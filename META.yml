@@ -1,8 +1,9 @@
 ---
-abstract: 'Expect for Perl'
+abstract: 'automate interactions with command line programs that expose a text terminal interface.'
 author:
   - unknown
 build_requires:
+  File::Temp: '0'
   Test::More: '1.00'
 configure_requires:
   ExtUtils::MakeMaker: '0'
@@ -18,8 +19,14 @@ no_index:
     - t
     - inc
 requires:
-  IO::Pty: '1.03'
-  IO::Tty: '1.03'
+  Carp: '0'
+  Errno: '0'
+  Exporter: '0'
+  Fcntl: '0'
+  IO::Handle: '0'
+  IO::Pty: '1.11'
+  IO::Tty: '1.11'
+  POSIX: '0'
 resources:
   repository: http://github.com/szabgab/expect.pm.git
-version: '1.22'
+version: '1.23'

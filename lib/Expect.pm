@@ -27,16 +27,16 @@ use POSIX qw(:sys_wait_h :unistd_h); # For WNOHANG and isatty
 use Fcntl qw(:DEFAULT);              # For checking file handle settings.
 use Carp qw(cluck croak carp confess);
 use IO::Handle ();
-use Exporter   ();
+use Exporter   qw(import);
 use Errno;
 
 # This is necessary to make routines within Expect work.
 
-@Expect::ISA    = qw(IO::Pty Exporter);
+@Expect::ISA    = qw(IO::Pty);
 @Expect::EXPORT = qw(expect exp_continue exp_continue_timeout);
 
 BEGIN {
-	$Expect::VERSION = '1.25';
+	$Expect::VERSION = '1.26';
 
 	# These are defaults which may be changed per object, or set as
 	# the user wishes.
@@ -753,27 +753,26 @@ sub _multi_expect($$@) {
 						}
 					} elsif ( $pattern->[1] eq '-re' ) {
 
-						# m// in array context promises to return an empty list
-						# but doesn't if the pattern doesn't contain brackets (),
-						# so we kludge around by adding an empty bracket
-						# at the end.
-
 						if ($Expect::Multiline_Matching) {
 							@matchlist =
-								( ${*$exp}{exp_Accum} =~ m/$pattern->[2]()/m );
-							( $match, $before, $after ) = ( $&, $`, $' );
+								( ${*$exp}{exp_Accum}  =~ m/($pattern->[2])/m);
 						} else {
 							@matchlist =
-								( ${*$exp}{exp_Accum} =~ m/$pattern->[2]()/ );
-							( $match, $before, $after ) = ( $&, $`, $' );
+								( ${*$exp}{exp_Accum} =~ m/($pattern->[2])/);
 						}
 						if (@matchlist) {
 
 							# Matching regexp
+							$match  = shift @matchlist;
+							my $start = index ${*$exp}{exp_Accum}, $match;
+							die 'The match could not be found' if $start == -1;
+							$before = substr ${*$exp}{exp_Accum}, 0, $start;
+							$after = substr ${*$exp}{exp_Accum}, $start + length($match);
+
 							${*$exp}{exp_Before} = $before;
 							${*$exp}{exp_Match}  = $match;
 							${*$exp}{exp_After}  = $after;
-							pop @matchlist; # remove kludged empty bracket from end
+							#pop @matchlist; # remove kludged empty bracket from end
 							@{ ${*$exp}{exp_Matchlist} } = @matchlist;
 							${*$exp}{exp_Match_Number} = $pattern->[0];
 							$exp_matched = $exp;

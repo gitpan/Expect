@@ -293,7 +293,7 @@ _EOT_
 					$exitloop = 1;
 				}
 			],
-			[ eof => sub { $status = 'eof'; die "EOF"; } ],
+			[ eof => sub { $status = 'eof';} ],
 		);
 		last if $exitloop;
 	}
@@ -307,7 +307,7 @@ _EOT_
 
 subtest controlling_termnal => sub {
 	diag "Testing controlling terminal...";
-	plan tests => 1;
+	plan tests => 3;
 
 	my $exp =
 		Expect->new( $Perl
@@ -335,10 +335,17 @@ subtest controlling_termnal => sub {
 				$val = $s;
 			}
 		],
-		[ eof     => sub { $val = 'eof'; die "EOF"; } ],
-		[ timeout => sub { $val = 'timeout'; die "Timeout"; } ],
+		[ eof     => sub { $val = 'eof'; } ],
+		[ timeout => sub { $val = 'timeout'; } ],
 	);
-	is $val, uc($pwd);
+	my $before = $exp->before;
+	$before =~ s/[\r\n]*$//;
+	is $before, " pAsswOrd", 'before';
+	my $after = $exp->after;
+	$after =~ s/[\r\n]*$//;
+	is $after,  "", 'after';
+
+	is $val, uc($pwd), 'uc';
 };
 
 

@@ -29,4 +29,4 @@ requires:
   POSIX: '0'
 resources:
   repository: http://github.com/szabgab/expect.pm.git
-version: '1.26'
+version: '1.27'

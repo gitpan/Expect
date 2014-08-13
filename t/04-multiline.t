@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 33;
 use Expect;
 
 my $e = Expect->new;
@@ -17,12 +17,14 @@ $e->spawn($^X . q{ -ne 'chomp; print "My\nHello\n"; print scalar reverse; print 
 	is $e->before, "My\nHello\n";
 	is $e->after, "\nWorld\nAnd\nMore\n";
 }
+my $wam = "\nWorld\nAnd\nMore\n";
 
 {
 	$e->send("def\n");
 	$e->expect(1, ['^fed$']);
 	is $e->match, 'fed', 'match';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
+
 }
 
 {
@@ -30,7 +32,7 @@ $e->spawn($^X . q{ -ne 'chomp; print "My\nHello\n"; print scalar reverse; print 
 	$e->expect(1, '-re', '(?:^X(.*d))');
 	is $e->match, 'XAnd', 'match';
 	is_deeply [$e->matchlist], ['And'], 'matchlist';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
 
 	#[   qr/(?m:^uc:\s*(\w+))/,
 }
@@ -39,14 +41,14 @@ $e->spawn($^X . q{ -ne 'chomp; print "My\nHello\n"; print scalar reverse; print 
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', '^X.*d$');
 	is $e->match, 'XAnd', 'match';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
 }
 
 {
 	$e->send("eroM\n");
 	$e->expect(1, '-re', '^M(..)e$');
 	is $e->match, 'More', 'match';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
 }
 
 
@@ -54,7 +56,7 @@ $e->spawn($^X . q{ -ne 'chomp; print "My\nHello\n"; print scalar reverse; print 
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', '^X(?s:.*)d$');
 	is $e->match, "XAnd\nWorld\nAnd", 'match';
-	$e->clear_accum;
+	is $e->clear_accum, "\nMore\n";
 }
 
 
@@ -62,17 +64,10 @@ $e->spawn($^X . q{ -ne 'chomp; print "My\nHello\n"; print scalar reverse; print 
 	$e->send("ghi\n");
 	$e->expect(1, '-re', '^ihg$');
 	is $e->match, 'ihg', 'match';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
 }
 
-
-TODO: {
-	local $TODO = 'Multiline_Maching does not work when qr// is passed. (Should it work?)';
-	my $reply;
-	$e->send("zorg\n");
-	$e->expect(1, [qr/^groz$/ => sub { $reply = $e->match } ]);
-	is $reply, 'groz';
-}
+my $last_match = $e->match;
 
 {
 	local $Expect::Multiline_Matching = 0;
@@ -84,7 +79,7 @@ TODO: {
 
 {
 	local $Expect::Multiline_Matching = 0;
-	$e->clear_accum;
+	is $e->clear_accum, "My\nHello\ncba$wam";
 	$e->send("def\n");
 	$e->expect(1, ['^fed$']);
 	#diag $e->before;
@@ -95,7 +90,7 @@ TODO: {
 		# This sounds like a bug.
 		is $e->match, undef, 'match';
 	}
-	is $e->match, 'ihg', 'maybe it should return ihg';
+	is $e->match, $last_match, 'maybe it should return ihg';
 }
 
 {
@@ -106,23 +101,23 @@ TODO: {
 		local $TODO = 'Why does the match return ihg in this example?';
 		is $e->match, undef, 'match';
 	}
-	is $e->match, 'ihg', 'maybe it should return ihg';
+	is $e->match, $last_match, 'maybe it should return ihg';
 }
 
 {
 	local $Expect::Multiline_Matching = 0;
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', '^X.*d$');
-	is $e->match, 'ihg', 'match';  # TODO: IMHO this should be undef as well.
-	$e->clear_accum;
+	is $e->match, $last_match, 'match';  # TODO: IMHO this should be undef as well.
+	is $e->clear_accum, "My\nHello\nfed${wam}My\nHello\nonm${wam}My\nHello\nXAnd${wam}";
 }
 
 {
 	local $Expect::Multiline_Matching = 0;
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', '^X(?s:.*)d$');
-	is $e->match, "ihg", 'match'; # TODO ??
-	$e->clear_accum;
+	is $e->match, $last_match, 'match'; # TODO ??
+	is $e->clear_accum, "My\nHello\nXAnd$wam";
 }
 
 
@@ -131,7 +126,7 @@ TODO: {
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', 'X.*d');   # no ^ and $
 	is $e->match, 'XAnd', 'match';
-	$e->clear_accum;
+	is $e->clear_accum, $wam;
 }
 
 {
@@ -139,7 +134,7 @@ TODO: {
 	$e->send("dnAX\n");
 	$e->expect(1, '-re', 'X(?s:.*)d'); # no ^ and $
 	is $e->match, "XAnd\nWorld\nAnd", 'match';
-	$e->clear_accum;
+	is $e->clear_accum, "\nMore\n";
 }
 
 
@@ -149,4 +144,27 @@ TODO: {
 	$e->expect(1, ['^cba$']);
 	is $e->match, 'cba', 'match';
 }
+
+TODO: {
+	local $TODO = 'Multiline_Maching does not work when qr// is passed. (Should it work?)' if $] >= 5.010;
+	# see the regex subtest checking this thing and see http://www.perlmonks.org/?node_id=1097316
+	my $reply;
+	$e->send("zorg\n");
+	$e->expect(1, [qr/^groz$/ => sub { $reply = $e->match } ]);
+	is $reply, 'groz';
+}
+
+subtest regex => sub {
+	plan tests => 4;
+
+	my $str = "x\nab\ny";
+	my $re = '^ab$';
+	ok $str !~ /$re/,  're';
+	ok $str =~ /$re/m, 're/m';
+
+	my $qre = qr/^ab$/;
+	ok $str !~ /$qre/,  'qre';
+	ok $str !~ /$qre/m, 'qre/m';  # I think this will fail on 5.8.x
+};
+
 

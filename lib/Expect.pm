@@ -36,7 +36,7 @@ use Errno;
 @Expect::EXPORT = qw(expect exp_continue exp_continue_timeout);
 
 BEGIN {
-	$Expect::VERSION = '1.27';
+	$Expect::VERSION = '1.28';
 
 	# These are defaults which may be changed per object, or set as
 	# the user wishes.
@@ -1758,6 +1758,8 @@ sub _trim_length {
 	# Also used if Max_Accum gets set to limit the size of the accumulator
 	# for matching functions.
 	# exp_internal
+
+	croak('No string passed') if not defined $string;
 
 	# If we're not passed a length (_trim_length is being used for debugging
 	# purposes) AND debug >= 3, don't trim.

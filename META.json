@@ -23,6 +23,7 @@
       "build" : {
          "requires" : {
             "File::Temp" : "0",
+            "Test::Exception" : "0.32",
             "Test::More" : "1.00"
          }
       },
@@ -52,5 +53,5 @@
          "web" : "http://github.com/szabgab/expect.pm"
       }
    },
-   "version" : "1.27"
+   "version" : "1.28"
 }

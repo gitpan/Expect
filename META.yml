@@ -3,11 +3,12 @@ abstract: 'automate interactions with command line programs that expose a text t
 author:
   - unknown
 build_requires:
+  ExtUtils::MakeMaker: '0'
   File::Temp: '0'
   Test::Exception: '0.32'
   Test::More: '1.00'
 configure_requires:
-  ExtUtils::MakeMaker: '0'
+  ExtUtils::MakeMaker: '6.70'
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.140640'
 license: perl
@@ -30,4 +31,4 @@ requires:
   POSIX: '0'
 resources:
   repository: http://github.com/szabgab/expect.pm.git
-version: '1.29'
+version: '1.30'

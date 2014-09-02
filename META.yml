@@ -3,14 +3,13 @@ abstract: 'automate interactions with command line programs that expose a text t
 author:
   - unknown
 build_requires:
-  ExtUtils::MakeMaker: '0'
   File::Temp: '0'
   Test::Exception: '0.32'
   Test::More: '1.00'
 configure_requires:
-  ExtUtils::MakeMaker: '6.70'
+  ExtUtils::MakeMaker: '6.64'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.140640'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -31,4 +30,4 @@ requires:
   POSIX: '0'
 resources:
   repository: http://github.com/szabgab/expect.pm.git
-version: '1.30'
+version: '1.31'

@@ -30,4 +30,4 @@ requires:
   POSIX: '0'
 resources:
   repository: http://github.com/szabgab/expect.pm.git
-version: '1.31'
+version: '1.32'
